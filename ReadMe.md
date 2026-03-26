@@ -1,125 +1,125 @@
-Huffman BMP File Compressor & Decompressor
+# Huffman BMP Compressor
 
-A C/C++ implementation of Huffman coding designed to compress and decompress BMP image files without using the STL.
-The project includes custom heap, tree, and bit-level I/O handling, making it suitable for data-structures coursework and low-level systems projects.
+A lossless file compressor and decompressor built from scratch in C++, using Huffman coding. No STL containers — every data structure is implemented manually.
 
-📌 Features
+Built as a data structures project to demonstrate low-level systems programming, bit manipulation, and custom memory management.
 
-- Compresses 24-bit BMP files using Huffman coding
+---
 
-- Reconstructs the original BMP using the stored frequency table
+## Demo
 
-- Manual bit manipulation for writing/reading the compressed stream
+| File | Size |
+|------|------|
+| Input BMP | 2.40 MB |
+| Compressed `.ECE2103` | 0.81 MB |
+| Compression ratio | ~66% |
 
-- Custom Min-Heap implementation (no STL containers)
+---
 
-- Custom Huffman Tree implementation
+## How it works
 
-- Writes frequency table + encoded bitstream in a custom .huff file format
+Huffman coding is a lossless compression algorithm that assigns shorter bit sequences to more frequent bytes and longer ones to rarer bytes. The result is a smaller file that can be perfectly reconstructed.
 
-- Fully supports decoding and restoring identical pixel data
+**Compression pipeline:**
 
-🔧 How It Works
-1. Frequency Table
+```
+Read BMP bytes → Count frequencies → Build min-heap → Build Huffman tree
+→ Generate bit codes → Write frequency table + encoded stream to file
+```
 
-BMP file is read as raw bytes.
+**Decompression pipeline:**
 
-A table of size 256 is created.
+```
+Read frequency table → Rebuild Huffman tree → Decode bit stream → Write original bytes
+```
 
-Each byte’s frequency is counted.
+### 1. Frequency table
+The input file is read as raw bytes. Each of the 256 possible byte values gets its occurrence count stored in a table.
 
-2. Custom Min-Heap
+### 2. Min-heap
+A custom min-heap (no `std::priority_queue`) stores tree nodes sorted by frequency. The two lowest-frequency nodes are repeatedly extracted and merged.
 
-Nodes contain {byte, frequency}.
+### 3. Huffman tree
+Merging continues until a single root node remains. Leaf nodes represent actual byte values; internal nodes are structural.
 
-Heap is used to repeatedly extract the two lowest-frequency nodes.
+### 4. Code generation
+A depth-first traversal of the tree generates a unique bitstring for each byte — shorter codes for frequent bytes, longer for rare ones.
 
-3. Huffman Tree Construction
+### 5. Encoding
+The frequency table is written to the output file first (used during decompression to rebuild the tree), followed by the encoded bitstream packed manually into bytes. Padding bits are tracked and stored.
 
-Combine nodes until only one root remains.
+### 6. Decoding
+The frequency table is read and the Huffman tree is reconstructed. Bits are read one at a time, walking the tree until a leaf is reached — the corresponding byte is written to output. Padding is accounted for at the end.
 
-Tree nodes contain:
+---
 
-byte value (leaf only)
+## Build & run
 
-frequency
+**Compile:**
+```bash
+g++ -o compressor main.cpp
+```
 
-left/right pointers
+**Compress:**
+```bash
+./compressor -c input.bmp output
+# Output: output.ECE2103
+```
 
-4. Code Generation
+**Decompress:**
+```bash
+./compressor -d input.ECE2103 output.bmp
+```
 
-Depth-first traversal creates a bitstring for each byte.
+**Optional — set buffer size (default 1024 bytes):**
+```bash
+./compressor -b 4096 -c input.bmp output
+```
 
-Codes are stored in a lookup table of size 256.
+---
 
-5. Encoding
+## Project structure
 
-Frequency table is written to file.
+```
+.
+├── main.cpp          # Full implementation
+├── README.md
+```
 
-Pixel bytes are encoded bit-by-bit into the output.
+All logic lives in `main.cpp` across three classes:
 
-BitWriter packs bits manually into bytes.
+| Class | Responsibility |
+|-------|----------------|
+| `Heap` | Custom min-heap, frequency table, node insertion and extraction |
+| `Huffman` | Tree construction, code generation, file encoding and decoding |
+| `Compressor` | Public interface — wraps compress and decompress workflows |
 
-6. Decoding
+---
 
-Rebuild frequency table from file.
+## Concepts demonstrated
 
-Reconstruct the Huffman tree.
+- Huffman coding algorithm
+- Binary tree construction and traversal
+- Custom min-heap / priority queue
+- Bit-level I/O (manual bit packing and unpacking)
+- Padding handling for non-byte-aligned streams
+- Binary file reading and writing with buffered I/O
+- Manual memory management (no smart pointers, no STL containers)
+- Command-line argument parsing
 
-Use BitReader to read bits from the compressed stream.
+---
 
-Walk the tree until reaching a leaf → write the decoded byte.
+## Limitations
 
-🚀 How to Run
+- Works on uncompressed BMP files only
+- Compression ratio depends on image entropy — highly random images compress poorly
+- Single-threaded
 
-Compress
+---
 
-./compressor input.bmp output.huff             -> on cmd
+## Possible improvements
 
-Decompress
-
-./compressor -d input.huff output.bmp             -> on cmd
-
-🧪 Example
-
-Input BMP: 2.40 MB
-Output .huff: 0.81 MB
-Compression ratio: ~66%
-
-(Values depend on image content.)
-
-🧩 Concepts Demonstrated
-
-Binary Trees
-
-Priority Queues (custom heap)
-
-Recursion
-
-Bit-level I/O
-
-File parsing
-
-Lossless compression algorithms
-
-Pointer manipulation & manual memory handling
-
-📌 Limitations
-
-Works only on uncompressed BMP files
-
-Heap and tree memory must be cleaned manually
-
-No STL containers allowed by design
-
-Compression efficiency depends on image entropy
-
-📖 Future Improvements
-
-Add support for PNG/JPG style compression containers
-
-Add multithreading for faster encoding
-
-Add GUI frontend
-
-Add Huffman tree serialization using preorder format
+- Support for additional file formats (PNG, text, arbitrary binary)
+- Huffman tree serialization using preorder traversal (more compact than storing the full frequency table)
+- Multithreaded encoding for large files
+- Adaptive Huffman coding (updates tree dynamically without a separate header)
